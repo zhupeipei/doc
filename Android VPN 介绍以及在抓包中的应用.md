@@ -4,7 +4,7 @@
 ## $ 1.1 VPN 介绍
 VPN的目的是能够在外网(不同网段)访问到内网资源。解决方法就是在内网中架设一台VPN服务器。用户在当地连上互联网后，通过互联网连接VPN服务器，然后通过VPN服务器进入企业内网。为了保证数据安全，VPN服务器和客户机之间的通讯数据都进行了加密处理。有了数据加密，就可以认为数据是在一条专用的数据链路上进行安全传输，就如同专门架设了一个专用网络一样，但实际上VPN使用的是互联网上的公用链路，因此VPN称为虚拟专用网络，其实质上就是利用加密技术在公网上封装出一个数据通讯隧道。有了VPN技术，用户无论是在外地出差还是在家中办公，只要能上互联网就能利用VPN访问内网资源，这就是VPN在企业中应用得如此广泛的原因。
 
-![](images/vpn&#32;intro.png)
+![](images/Android&#32;vpn/vpn&#32;intro.png)
 
 假设要访问谷歌，那么客户端发出的数据包首先通过协议栈处理封装成IP包，其源地址是虚拟网卡的地址，例如：192.168.0.2，而目标地址是谷歌的IP。
 
@@ -244,27 +244,40 @@ MITM Server的处理方式是从第一个SSL/TLS握手包Client Hello中提取�
 ### $ 3.3 OkHttp SSL 握手
 
 ```
-Request request = new Request.Builder().get().url("https://www.baidu.com").build();
+final Request request = new Request.Builder().get().url("https://www.baidu.com").build();
 
 OkHttpClient.Builder builder = new OkHttpClient.Builder();
 
-OkHttpClient client = builder.build();
+OkHttpClient client = builder.sslSocketFactory(getSSLSocketFactory()).hostnameVerifier(new HostnameVerifier() {
+    @Override
+    public boolean verify(String hostname, SSLSession sslSession) {
+        Log.d("zimotag", hostname); // www.baidu.com
+        return true;
+    }
+}).build();
 
 client.newCall(request).enqueue(new Callback() {
-            @Override
-            public void onFailure(Call call, IOException e) {
-            }
-            @Override
-    public void onResponse(Call call, Response response) throws IOException {
+    @Override
+    public void onFailure(Call call, IOException e) {
+    }
+
+    @Override
+    public void onResponse(Call call, Response response) throws IOException {
+        Log.d("zimotag", response.body().string());
     }
 });
 ```
 ```
-private SSLSocketFactory getSSLSocketFactory() throws NoSuchAlgorithmException, KeyManagementException {
-    SSLContext context = SSLContext.getInstance("TLS");
-    TrustManager[] trustManagers = {new MyX509TrustManager()};
-    context.init(null, trustManagers, new SecureRandom());
-    return context.getSocketFactory();
+private SSLSocketFactory getSSLSocketFactory() {
+    try {
+        SSLContext context = SSLContext.getInstance("TLS");
+        TrustManager[] trustManagers = {new MyX509TrustManager()};
+        context.init(null, trustManagers, new SecureRandom());
+        return context.getSocketFactory();
+    } catch (Exception e) {
+        e.printStackTrace();
+        return null;
+    }
 }
 ```
 
@@ -301,37 +314,37 @@ private class MyX509TrustManager implements X509TrustManager {
             e.printStackTrace();
         }
 
-        //获取本地证书中的信息
-        String clientEncoded = "";
-        String clientSubject = "";
-        String clientIssUser = "";
-        try {
-            CertificateFactory certificateFactory = CertificateFactory.getInstance("X.509");
-            InputStream inputStream = getAssets().open("baidu.cer");
-            X509Certificate clientCertificate = (X509Certificate) certificateFactory.generateCertificate(inputStream);
-            clientEncoded = new BigInteger(1, clientCertificate.getPublicKey().getEncoded()).toString(16);
-            clientSubject = clientCertificate.getSubjectDN().getName();
-            clientIssUser = clientCertificate.getIssuerDN().getName();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        //获取网络中的证书信息
-        X509Certificate certificate = chain[0];
-        PublicKey publicKey = certificate.getPublicKey();
-        String serverEncoded = new BigInteger(1, publicKey.getEncoded()).toString(16);
-
-        if (!clientEncoded.equals(serverEncoded)) {
-            throw new CertificateException("server's PublicKey is not equals to client's PublicKey");
-        }
-        String subject = certificate.getSubjectDN().getName();
-        if (!clientSubject.equals(subject)) {
-            throw new CertificateException("server's subject is not equals to client's subject");
-        }
-        String issuser = certificate.getIssuerDN().getName();
-        if (!clientIssUser.equals(issuser)) {
-            throw new CertificateException("server's issuser is not equals to client's issuser");
-        }
+//            //获取本地证书中的信息
+//            String clientEncoded = "";
+//            String clientSubject = "";
+//            String clientIssUser = "";
+//            try {
+//                CertificateFactory certificateFactory = CertificateFactory.getInstance("X.509");
+//                InputStream inputStream = getAssets().open("baidu.cer");
+//                X509Certificate clientCertificate = (X509Certificate) certificateFactory.generateCertificate(inputStream);
+//                clientEncoded = new BigInteger(1, clientCertificate.getPublicKey().getEncoded()).toString(16);
+//                clientSubject = clientCertificate.getSubjectDN().getName();
+//                clientIssUser = clientCertificate.getIssuerDN().getName();
+//            } catch (IOException e) {
+//                e.printStackTrace();
+//            }
+//
+//            //获取网络中的证书信息
+//            X509Certificate certificate = chain[0];
+//            PublicKey publicKey = certificate.getPublicKey();
+//            String serverEncoded = new BigInteger(1, publicKey.getEncoded()).toString(16);
+//
+//            if (!clientEncoded.equals(serverEncoded)) {
+//                throw new CertificateException("server's PublicKey is not equals to client's PublicKey");
+//            }
+//            String subject = certificate.getSubjectDN().getName();
+//            if (!clientSubject.equals(subject)) {
+//                throw new CertificateException("server's subject is not equals to client's subject");
+//            }
+//            String issuser = certificate.getIssuerDN().getName();
+//            if (!clientIssUser.equals(issuser)) {
+//                throw new CertificateException("server's issuser is not equals to client's issuser");
+//            }
     }
 
     @Override
@@ -381,11 +394,75 @@ private class MyX509TrustManager implements X509TrustManager {
 
 ### 3.5 抓包流程图
 
-![](images/Android&#32;vpn/vpn&#32;capture&#32;packet.jpg)
+<p align="center">
+    <img src="images/Android&#32;vpn/vpn&#32;capture&#32;packet&#32;process.png" width="80%" />
+</p>
+<!-- ![](images/Android&#32;vpn/vpn&#32;capture&#32;packet&#32;process.png) -->
+
+<!-- ![](images/Android&#32;vpn/vpn&#32;capture&#32;packet.jpg) -->
+
+1. 被代理的Local Socket发起网络请求，由于打开了VPN接口，网络IP包被转发到了虚拟网卡上。
+2. VPNService被打开之后获得了虚拟网络的文件地址，从文件上读取IP包。本步骤和步骤20其实是一个同一个动作。
+3. 解析IP包，获得其源端口，通过源端口判断此IP包是由Local Socket还是Local Tunnel，如果是由Local Socket发出的则修改了目标IP和目标端口为本地建立的ServerSocket的IP和端口，并将源IP修改成需要目标的IP，合成新包，并建立Session，保存此链路的源端口、目标IP，目标端口。如果是由Local Tunnel发出来的则进行步骤21。
+4. 将新包写在虚拟网络的文件地址上。
+5. 新的IP进行转发。
+6. 新的Ip包被转发到由ServerSocket所建立的LocalTunnel上。
+7. 如果是https请求，则进行握手或者解密操作；如果是http请求则直接跳过。
+8. LocalTunnel将其保存到请求容器中。
+9. 与LocalTunnel配对的RemoteTunnel从请求容器中取出请求。
+10. 对https请求的内容进行加密；http请求略过。
+11. RemoteTunnel将取出的请求转发给服务器，并将请求保存起来，作为抓包的请求。
+12. 服务器产生响应的IP包。
+13. RemoteTunnel收到服务器的响应，并将响应保存起来，作为抓包的响应。
+14. 对https响应的内容进行解密；http请求略过。
+15. RemoteTunnel将收到的响应保存到响应容器。
+16. 与RemoteTunnel配对的LocalTunnel从容器中取出响应。
+17. 如果是https响应，则进行加密操作；如果是http请求则直接跳过。
+18. LocalTunnel将响应发给LocalSocket，响应又被转发到了虚拟网络设备上。
+19. IP包进行转发。
+20. VPNService从虚拟网络上读取请求IP包。本步骤和步骤2是同一个动作。
+21. 解析获得源端口，如果源端口是由Local Tunnel发出来的，则修改了目标IP为Session所保存的源IP，源IP为Session所保存的目标IP，源端口为Session所保存的目标端口，合成新包。
+22. 将新包写到虚拟网络设备上。
+23. 响应被转发到Local Socket，整个过程结束。
+
+
 
 ## $ 4 附录
 ### $ 4.1 参考文章
 
+> [https://yuerblog.cc/2017/01/03/how-vpn-works-and-how-to-setup-pptp/](https://yuerblog.cc/2017/01/03/how-vpn-works-and-how-to-setup-pptp/)
+
+
+> [https://blog.csdn.net/xianjian1990/article/details/78980018](https://blog.csdn.net/xianjian1990/article/details/78980018)
+
+
+> [https://superxlcr.github.io/2018/07/01/%E4%B8%8A%E7%BD%91%E9%99%90%E5%88%B6%E5%92%8C%E7%BF%BB%E5%A2%99%E5%9F%BA%E6%9C%AC%E5%8E%9F%E7%90%86/](https://superxlcr.github.io/2018/07/01/%E4%B8%8A%E7%BD%91%E9%99%90%E5%88%B6%E5%92%8C%E7%BF%BB%E5%A2%99%E5%9F%BA%E6%9C%AC%E5%8E%9F%E7%90%86/)
+
+> [https://blog.csdn.net/hdxlzh/article/details/46711901](https://blog.csdn.net/hdxlzh/article/details/46711901)
+
+
+> [https://blog.csdn.net/windeal3203/article/details/51089278](https://blog.csdn.net/windeal3203/article/details/51089278)
+
+
+> [https://blog.csdn.net/Roland_Sun/article/details/46337171](https://blog.csdn.net/Roland_Sun/article/details/46337171)
+
+
+> [https://blog.csdn.net/Roland_Sun/article/details/46337171](https://blog.csdn.net/Roland_Sun/article/details/46337171)
+
+
+> [https://blog.csdn.net/Roland_Sun/article/details/46337171](https://blog.csdn.net/Roland_Sun/article/details/46337171)
+
+
+> [https://www.jianshu.com/p/07a1e362e1ba](https://www.jianshu.com/p/07a1e362e1ba)
+
+
+> [https://juejin.im/post/5cc313755188252d6f11b463#heading-6](https://juejin.im/post/5cc313755188252d6f11b463#heading-6)
+
+> [https://juejin.im/post/5cc313755188252d6f11b463](https://juejin.im/post/5cc313755188252d6f11b463)
+
+> [https://www.jianshu.com/p/ae4d433597ce](https://www.jianshu.com/p/ae4d433597ce)
+
+> [https://blog.csdn.net/yaopeng_2005/article/details/7064869](https://blog.csdn.net/yaopeng_2005/article/details/7064869)
 
 ### $ 4.2 tcp/ip
 

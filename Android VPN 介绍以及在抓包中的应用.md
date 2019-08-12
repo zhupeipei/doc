@@ -136,7 +136,7 @@ out.write(packet.array(), 0, length);
 
 2）并不需要获得Android设备的root权限就可以建立VPN连接。你所需要的只是在你应用程序内的AndroidManifest.xml文件中申明需要一个叫做“android.permission.BIND_VPN_SERVICE”的特殊权限；
 
-3）在正式建立VPN链接之前，Android系统会弹出一个对话框，需要用户明确的同意；
+3）在正式建立VPN连接之前，Android系统会弹出一个对话框，需要用户明确的同意；
 
 4）一旦建立起了VPN连接，Android设备上所有发送出去的IP包，都会被转发到虚拟网卡的网络接口上去（主要是通过给不同的套接字打fwmark标签和iproute2策略路由来实现的）；
 
@@ -389,7 +389,7 @@ private class MyX509TrustManager implements X509TrustManager {
 4. 安装到系统CA证书目录
 对于Root的机器，这是最完美最佳的解决方案。如果把CA证书安装到系统CA证书目录中，那这个假CA证书就是真正洗白了，不是真的也是真的了。
 
-#### 如果APP内置了服务端证书，在HTTPS请求时，Server端发给客户端的公钥证书必须与Client端内置的公钥证书一致，请求才会成功。
+#### 三、 如果APP内置了服务端证书，在HTTPS请求时，Server端发给客户端的公钥证书必须与Client端内置的公钥证书一致，请求才会成功。
 这种情况下要么传入真正的服务端证书；要么通过hook破解证书固定，具体可以参考 [JustTrustMe](https://github.com/Fuzion24/JustTrustMe)
 
 ### 3.5 抓包流程图
